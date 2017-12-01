@@ -1,5 +1,6 @@
-default: encrypt
+default: key
 
+# actual key-file generation logic
 key-path="$(shell echo "$$(pwd)/key" )"
 SHELL_KEY="$(shell echo "$$AES_256_GCM_SECRET")"
 ifeq (${SHELL_KEY}, "")
@@ -14,15 +15,23 @@ _generate_new_key:
 	@echo "Wrote key to ${key-path}"
 endif
 
-generate-key:
-	@[ -f "${key-path}" ] && echo "${key-path} already exists, reusing!" || $(MAKE) _generate_new_key
+# detect key file, create if DNE via logic above
+key:
+	@[ -f "${key-path}" ] && \
+	  echo "${key-path} already exists, reusing!" && \
+	  touch ${key-path} \
+	  || $(MAKE) _generate_new_key
 
-generate-iv:
+# more a utility target to generate IVs for targets below
+iv:
 	date +%s | md5 > iv
+
+# meat of automations - crypto-black magicks
+.PHONY: encrypt decrypt
 
 encrypted-val-file=${secret}-encrypted
 json-file=${secret}-encrypted.json
-encrypt: generate-key generate-iv
+encrypt: key iv
 	# Checking for input file (secret=<YOUR_FILE>)
 	if [ -z "${secret}" ]; then exit 1; fi
 	# Generating secrets file
@@ -36,8 +45,8 @@ encrypt: generate-key generate-iv
 	@echo "    \"value-base64-encoded\": \"$$(cat ${encrypted-val-file}|base64)\"" >> ${json-file}
 	@echo "}" >> ${json-file}
 	@rm iv meta.txt ${encrypted-val-file}
-	@echo ${json-file}
 	@cat ${json-file}
+	@echo ${json-file}
 
 decrypt:
 	# Checking for input file (encrypted=<YOUR_FILE> - generated via "make encrypt")
@@ -51,4 +60,5 @@ decrypt:
 	  -K "$$(cat key)" \
 	  -in encrypted-data -out decrypt-val.attempt.json
 	@rm encrypted-data
-	@echo "Decrypted decrypt-val.attempt.json from ${encrypted}"
+	@echo "Decrypted ${encrypted}:"
+	@echo decrypt-val.attempt.json

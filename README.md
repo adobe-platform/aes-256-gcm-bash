@@ -8,14 +8,21 @@ Because encrypting things in bash is hard.
 ## Generate a AES-256-GCM `key` file
 
 ```
-make generate-key
+make key
 ```
 
 This will create a `key` file. Do NOT lose it as it is required to encrypt & decrypt files.
+If the `key` file already exists, it will use it. This target also looks @ the `AES_256_GCM_SECRET` env var too. In order of precedence:
+
+1. `$(pwd)/key`
+2. `AES_256_GCM_SECRET` env var (which then gets written to `$(pwd)/key`)
+3. Generate a *NEW* one via openssl
 
 ## Encrypt Your File(s)
 
-Running `make secret=<YOUR FILE>` or `make encrypt secret=<YOUR FILE>` will generate a JSON blob/file
+Running `make encrypt secret=<YOUR FILE>` will generate a JSON blob/file. This, be default, will call `generate-key` (above), so if you have a `key` file from before or not this should just work.
+
+So given a file, this target will attempt to encrypt it and write the contents into a file named <YOUR-FILE>-encrypted.json
 
 e.g. in `decrypt-val-encrypted.json`:
 
