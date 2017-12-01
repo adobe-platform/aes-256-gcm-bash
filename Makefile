@@ -31,17 +31,17 @@ iv:
 # meat of automations - crypto-black magicks
 .PHONY: encrypt decrypt clean
 
-clean-files=*-encrypted meta.txt iv
+clean-files=*-encrypted meta.txt iv encrypted-data
 clean:
 	# Cleaning ...
-	@ls ${clean-files} || :
-	@rm ${clean-files} || :
+	@ls -R ${clean-files} 2>/dev/null || :
+	@rm ${clean-files} 2> /dev/null || :
 
-all-clean-files=${clean-files} *.attempt.json *-encrypted.json
+all-clean-files=${clean-files} *-decrypted *-encrypted.json
 clean-all:
 	# Cleaning ALL files...
-	@ls ${all-clean-files} || :
-	@rm ${all-clean-files} || :
+	@ls -R ${all-clean-files} 2>/dev/null || :
+	@rm ${all-clean-files} 2> /dev/null || :
 
 encrypted-val-file=${secret}-encrypted
 json-file=${secret}-encrypted.json
@@ -64,18 +64,22 @@ encrypt: key iv
 	# Path:
 	@echo ${json-file}
 
+decrypted-file=${encrypted}-decrypted
 decrypt:
 	# Checking for input file (encrypted=<YOUR_FILE> - generated via "make encrypt")
 	@if [ -z "${encrypted}" ] || [ ! -f "${encrypted}" ]; then echo "INVALID FILE (DNE?): ${encrypted}" && exit 1; fi
 	# Reading encrypted metadata...
 	@jq '.["value-base64-encoded"]' -r ${encrypted} | base64 --decode > encrypted-data
 	# Decrypting...
+	@[ ! -f "${key-path}" ] && echo "No such file: ${key-path}" && \
+		echo "You may have to run:" && \
+		echo "\n    make key\n" && \
+		echo "or encrypt a file (make encrypt) first!\n" && exit 1 || :
 	@openssl aes-256-gcm \
 	  -iv "$$(jq .iv -r ${encrypted})" \
 	  -S "$$(jq .salt -r ${encrypted})" \
 	  -K "$$(cat key)" \
-	  -in encrypted-data -out decrypt-val.attempt.json
+	  -in encrypted-data -out ${decrypted-file}
 	@$(MAKE) clean
-	# Completed decryption
-	# Path:
-	@echo decrypt-val.attempt.json
+	# Decryption cmd returned; PLEASE CHECK FILE:
+	@echo ${decrypted-file}
