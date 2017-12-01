@@ -27,13 +27,19 @@ iv:
 	date +%s | md5 > iv
 
 # meat of automations - crypto-black magicks
-.PHONY: encrypt decrypt
+.PHONY: encrypt decrypt clean
+
+clean-files=*.attempt.json *-encrypted.json *-encrypted
+clean:
+	# Cleaning ...
+	ls ${clean-files} || :
+	@rm iv ${clean-files} || :
 
 encrypted-val-file=${secret}-encrypted
 json-file=${secret}-encrypted.json
 encrypt: key iv
 	# Checking for input file (secret=<YOUR_FILE>)
-	if [ -z "${secret}" ]; then exit 1; fi
+	@if [ -z "${secret}" ] || [ ! -f "${secret}" ]; then echo "INVALID FILE (DNE?): ${secret}" && exit 1; fi
 	# Generating secrets file
 	@openssl enc -aes-256-gcm -p -salt \
 	  -iv "$$(cat iv)" \
@@ -50,7 +56,7 @@ encrypt: key iv
 
 decrypt:
 	# Checking for input file (encrypted=<YOUR_FILE> - generated via "make encrypt")
-	if [ -z "${encrypted}" ]; then exit 1; fi
+	@if [ -z "${encrypted}" ] || [ ! -f "${encrypted}" ]; then echo "INVALID FILE (DNE?): ${encrypted}" && exit 1; fi
 	# Reading encrypted metadata...
 	@jq '.["value-base64-encoded"]' -r ${encrypted} | base64 --decode > encrypted-data
 	# Decrypting...
