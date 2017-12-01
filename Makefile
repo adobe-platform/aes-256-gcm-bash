@@ -24,7 +24,9 @@ key:
 
 # more a utility target to generate IVs for targets below
 iv:
-	date +%s | md5 > iv
+	# Generating Initialization Vector
+	@echo "$$(pwd)/iv"
+	@date +%s | md5 > iv
 
 # meat of automations - crypto-black magicks
 .PHONY: encrypt decrypt clean
