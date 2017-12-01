@@ -31,11 +31,17 @@ iv:
 # meat of automations - crypto-black magicks
 .PHONY: encrypt decrypt clean
 
-clean-files=*.attempt.json *-encrypted.json *-encrypted
+clean-files=*-encrypted meta.txt iv
 clean:
 	# Cleaning ...
-	ls ${clean-files} || :
-	@rm iv ${clean-files} || :
+	@ls ${clean-files} || :
+	@rm ${clean-files} || :
+
+all-clean-files=${clean-files} *.attempt.json *-encrypted.json
+clean-all:
+	# Cleaning ALL files...
+	@ls ${all-clean-files} || :
+	@rm ${all-clean-files} || :
 
 encrypted-val-file=${secret}-encrypted
 json-file=${secret}-encrypted.json
@@ -52,8 +58,10 @@ encrypt: key iv
 	@echo "    \"iv\": \"$$(cat iv)\"," >> ${json-file}
 	@echo "    \"value-base64-encoded\": \"$$(cat ${encrypted-val-file}|base64)\"" >> ${json-file}
 	@echo "}" >> ${json-file}
-	@rm iv meta.txt ${encrypted-val-file}
+	@$(MAKE) clean
+	# Generated File:
 	@cat ${json-file}
+	# Path:
 	@echo ${json-file}
 
 decrypt:
@@ -67,6 +75,7 @@ decrypt:
 	  -S "$$(jq .salt -r ${encrypted})" \
 	  -K "$$(cat key)" \
 	  -in encrypted-data -out decrypt-val.attempt.json
-	@rm encrypted-data
-	@echo "Decrypted ${encrypted}:"
+	@$(MAKE) clean
+	# Completed decryption
+	# Path:
 	@echo decrypt-val.attempt.json
