@@ -1,14 +1,28 @@
 default: encrypt
 
+key-path="$(shell echo "$$(pwd)/key" )"
+SHELL_KEY="$(shell echo "$$AES_256_GCM_SECRET")"
+ifeq (${SHELL_KEY}, "")
+_generate_new_key:
+	@echo "Generating NEW key!"
+	@openssl enc -aes-256-cbc -k secret -P -md sha1 | grep key= | cut -d= -f2 > key
+	@echo "Wrote key to ${key-path}"
+else
+_generate_new_key:
+	@echo "Using ENV Var AES_256_GCM_SECRET"
+	@echo "$$AES_256_GCM_SECRET" > key
+	@echo "Wrote key to ${key-path}"
+endif
+
 generate-key:
-	openssl enc -aes-256-cbc -k secret -P -md sha1 | grep key= | cut -d= -f2 > key
+	@[ -f "${key-path}" ] && echo "${key-path} already exists, reusing!" || $(MAKE) _generate_new_key
 
 generate-iv:
 	date +%s | md5 > iv
 
 encrypted-val-file=${secret}-encrypted
 json-file=${secret}-encrypted.json
-encrypt: generate-iv
+encrypt: generate-key generate-iv
 	# Checking for input file (secret=<YOUR_FILE>)
 	if [ -z "${secret}" ]; then exit 1; fi
 	# Generating secrets file
