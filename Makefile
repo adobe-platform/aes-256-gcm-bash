@@ -3,27 +3,24 @@ default: key
 workspace=$(shell echo "$$(pwd)/.aes_256_gcm")
 
 # actual key-file generation logic
-key-path=${workspace}/key
 SHELL_KEY="$(shell echo "$$AES_256_GCM_SECRET")"
 ifeq (${SHELL_KEY}, "")
 _generate_new_key:
-	@mkdir -p ${workspace} 2>/dev/null
-	@echo "WARNING: Generating NEW key!"
-	@openssl enc -aes-256-cbc -k secret -P -md sha1 | grep key= | cut -d= -f2 > ${key-path}
-	@echo "Wrote key to ${key-path}"
+	@echo "No AES_256_GCM_SECRET detected. If you need one, please run:"
+	@echo "    openssl enc -aes-256-cbc -k secret -P -md sha1 | grep key= | cut -d= -f2"
+	@echo "to generate a new one for testing"
+	exit 1
 else
 _generate_new_key:
 	@mkdir -p ${workspace} 2>/dev/null
-	@echo "Using ENV Var AES_256_GCM_SECRET"
-	@echo "$$AES_256_GCM_SECRET" > ${key-path}
-	@echo "Wrote key to ${key-path}"
+	@echo "Using existing ENV Var AES_256_GCM_SECRET"
 endif
 
 # detect key file, create if DNE via logic above
 key:
-	@[ -f "${key-path}" ] && \
-	  echo "${key-path} already exists, reusing!" && \
-	  touch ${key-path} \
+	@[ ! -d "${workspace}" ] && mkdir -p ${workspace} || :
+	@[ ! -z ${SHELL_KEY} ] && \
+	  echo "Using env-var AES_256_GCM_SECRET" \
 	  || $(MAKE) _generate_new_key
 
 # more a utility target to generate IVs for targets below
@@ -67,7 +64,7 @@ encrypt: key iv
 	# Generating secrets file
 	@openssl enc -aes-256-gcm -p -salt \
 	  -iv "$$(cat ${iv-path})" \
-	  -K "$$(cat ${key-path})" \
+	  -K "$$AES_256_GCM_SECRET" \
 	  -in ${secret} -out ${encrypted-val-file} | grep -v 'key=' > ${meta-file}
 	@echo "{" > ${secret}-encrypted.json
 	@echo "    \"salt\": \"$$(cat ${meta-file} |grep salt=|cut -d= -f2)\"," >> ${json-file}
@@ -87,14 +84,14 @@ decrypt: key
 	# Reading encrypted metadata...
 	@jq '.["value-base64-encoded"]' -r ${encrypted} | base64 --decode > ${enc-dat-file}
 	# Decrypting...
-	@[ ! -f "${key-path}" ] && echo "No such file: ${key-path}" && \
+	@[ -z ${SHELL_KEY} ] && echo "No such env-var: AES_256_GCM_SECRET" && \
 		echo "You may have to run:" && \
 		echo "\n    make key\n" && \
 		echo "or encrypt a file (make encrypt) first!\n" && exit 1 || :
 	@openssl aes-256-gcm \
 	  -iv "$$(jq .iv -r ${encrypted})" \
 	  -S "$$(jq .salt -r ${encrypted})" \
-	  -K "$$(cat ${key-path})" \
+	  -K ${SHELL_KEY} \
 	  -in ${enc-dat-file} -out ${decrypted-file}
 	@$(MAKE) clean
 	# Decryption cmd returned; PLEASE CHECK FILE:
