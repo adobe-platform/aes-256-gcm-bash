@@ -5,6 +5,12 @@ Because encrypting things in bash is hard.
 
 # Getting Started
 
+## Install LibreSSL (OSX)
+
+```
+brew install libressl
+```
+
 ## Generate a AES-256-GCM `key` file
 
 ```
