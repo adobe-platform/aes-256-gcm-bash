@@ -7,7 +7,7 @@ SHELL_KEY="$(shell echo "$$AES_256_GCM_SECRET")"
 ifeq (${SHELL_KEY}, "")
 _generate_new_key:
 	@echo "No AES_256_GCM_SECRET detected. If you need one, please run:"
-	@echo "    openssl enc -aes-256-cbc -k secret -P -md sha1 | grep key= | cut -d= -f2"
+	@echo '    export AES_256_GCM_SECRET=$$(openssl enc -aes-256-cbc -k secret -P -md sha1 | grep key= | cut -d= -f2)'
 	@echo "to generate a new one for testing"
 	exit 1
 else
@@ -31,7 +31,10 @@ iv:
 	@date +%s | md5 > ${iv-path}
 
 # meat of automations - crypto-black magicks
-.PHONY: encrypt decrypt clean clean-all
+.PHONY: encrypt decrypt clean clean-all install
+
+install:
+	ln -sf $$(pwd)/bin/aes-256-gcm-bash $$(echo $$PATH | cut -d: -f1)/aes-256-gcm-bash
 
 # workspace specific meta files used for intermediate operations
 #  - used for encrypt
