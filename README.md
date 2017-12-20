@@ -10,6 +10,34 @@ Because encrypting things in bash is hard.
 ```
 brew install libressl
 ```
+# AWS KMS
+AWS KMS can be used to manage the AES secret key.
+
+## Generate a AES-256-GCM `key` file via KMS
+```
+$ # Expects the following environment variables
+$ #   AWS_REGION
+$ #   KMS_KEY_ARN
+$ # to be set
+
+$ make kms-key
+
+Retreived Ciphertext from KMS:
+	AQID...
+
+Available in env-var
+	`KMS_CIPHERTEXT`
+```
+
+## Get AES-256-GCM `secret`
+```
+$ # Expects the following environment variables
+$ #    AWS_REGION
+$ #    KMS_CIPHERTEXT # cyphertext returned from `make kms-key` above
+$ # to be set
+
+$ make kms-get-secret
+```
 
 ## Generate a AES-256-GCM `key` file
 
