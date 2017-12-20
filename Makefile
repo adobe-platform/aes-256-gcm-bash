@@ -1,13 +1,15 @@
 default: key
 
+THIS_FILE := $(lastword $(MAKEFILE_LIST))
 workspace=$(shell echo "$$(pwd)/.aes_256_gcm")
+OPENSSL_KEY_GEN_CMD=openssl enc -aes-256-cbc -k secret -P -md sha1 | grep key= | cut -d= -f2
 
 # actual key-file generation logic
 SHELL_KEY="$(shell echo "$$AES_256_GCM_SECRET")"
 ifeq (${SHELL_KEY}, "")
 _generate_new_key:
 	@echo "No AES_256_GCM_SECRET detected. If you need one, please run:"
-	@echo '    export AES_256_GCM_SECRET=$$(openssl enc -aes-256-cbc -k secret -P -md sha1 | grep key= | cut -d= -f2)'
+	@echo '    export AES_256_GCM_SECRET=$$(${OPENSSL_KEY_GEN_CMD})'
 	@echo "to generate a new one for testing"
 	exit 1
 else
@@ -21,20 +23,22 @@ key:
 	@[ ! -d "${workspace}" ] && mkdir -p ${workspace} || :
 	@[ ! -z ${SHELL_KEY} ] && \
 	  echo "Using env-var AES_256_GCM_SECRET" \
-	  || $(MAKE) _generate_new_key
+	  || $(MAKE) --file $(THIS_FILE) _generate_new_key
 
 # more a utility target to generate IVs for targets below
 iv-path=${workspace}/iv
 iv:
 	# Generating Initialization Vector
 	@echo ${iv-path}
-	@date +%s | md5 > ${iv-path}
+	@date +%s | md5 > ${iv-path} || \                    # mac
+	  date +%s | md5sum | awk '{print $$1}' > ${iv-path} # alpine
 
 # meat of automations - crypto-black magicks
 .PHONY: encrypt decrypt clean clean-all install
 
 install:
 	@brew install libressl || apk add libressl
+	@mkdir -p $$(echo $$PATH | cut -d: -f1)
 	ln -sf $$(pwd)/bin/aes-256-gcm-bash $$(echo $$PATH | cut -d: -f1)/aes-256-gcm-bash
 
 # workspace specific meta files used for intermediate operations
@@ -59,7 +63,7 @@ endif
 all-clean-files=${clean-files}
 clean-all:
 	# Cleaning ALL files...
-	@$(MAKE) clean
+	@$(MAKE) --file $(THIS_FILE) clean
 	@rm *-decrypted *-encrypted.json 2> /dev/null || :
 
 encrypt: key iv
@@ -75,7 +79,7 @@ encrypt: key iv
 	@echo "    \"iv\": \"$$(cat ${iv-path})\"," >> ${json-file}
 	@echo "    \"value-base64-encoded\": \"$$(cat ${encrypted-val-file}|base64)\"" >> ${json-file}
 	@echo "}" >> ${json-file}
-	@$(MAKE) clean
+	@$(MAKE) --file $(THIS_FILE) clean
 	# Generated File:
 	@cat ${json-file}
 	# Path:
@@ -86,7 +90,8 @@ decrypt: key
 	# Checking for input file (encrypted=<YOUR_FILE> - generated via "make encrypt")
 	@if [ -z "${encrypted}" ] || [ ! -f "${encrypted}" ]; then echo "INVALID FILE (DNE?): ${encrypted}" && exit 1; fi
 	# Reading encrypted metadata...
-	@jq '.["value-base64-encoded"]' -r ${encrypted} | base64 --decode > ${enc-dat-file}
+	@jq '.["value-base64-encoded"]' -r ${encrypted} | base64 --decode > ${enc-dat-file} || \ # mac
+	  jq '.["value-base64-encoded"]' -r ${encrypted} | base64 -d > ${enc-dat-file}           # alpine
 	# Decrypting...
 	@[ -z ${SHELL_KEY} ] && echo "No such env-var: AES_256_GCM_SECRET" && \
 		echo "You may have to run:" && \
@@ -97,6 +102,6 @@ decrypt: key
 	  -S "$$(jq .salt -r ${encrypted})" \
 	  -K ${SHELL_KEY} \
 	  -in ${enc-dat-file} -out ${decrypted-file}
-	@$(MAKE) clean
+	@$(MAKE) --file $(THIS_FILE) clean
 	# Decryption cmd returned; PLEASE CHECK FILE:
 	@echo ${decrypted-file}
