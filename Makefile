@@ -5,7 +5,7 @@ THIS_FILE_DIR := $(dir ${THIS_FILE})
 workspace=$(shell echo "$$(pwd)/.aes_256_gcm")
 OPENSSL_KEY_GEN_CMD=openssl enc -aes-256-cbc -k secret -P -md sha1 | grep key= | cut -d= -f2
 
-ifeq (${AES_256_GCM_SECRET}, "")
+ifeq ("${AES_256_GCM_SECRET}", "")
 _generate_new_key:
 	@echo "No AES_256_GCM_SECRET detected. If you need one, please run:"
 	@echo '    export AES_256_GCM_SECRET=$$(${OPENSSL_KEY_GEN_CMD})'
@@ -20,7 +20,7 @@ endif
 # detect key file, create if DNE via logic above
 key:
 	@[ ! -d "${workspace}" ] && mkdir -p ${workspace} || :
-	@[ ! -z ${AES_256_GCM_SECRET} ] && \
+	@[ ! -z "${AES_256_GCM_SECRET}" ] && \
 	  echo "Using env-var AES_256_GCM_SECRET" \
 	  || $(MAKE) --file $(THIS_FILE) _generate_new_key
 
@@ -76,7 +76,7 @@ encrypt: key iv
 	@echo "{" > ${secret}-encrypted.json
 	@echo "    \"salt\": \"$$(cat ${meta-file} |grep salt=|cut -d= -f2)\"," >> ${json-file}
 	@echo "    \"iv\": \"$$(cat ${iv-path})\"," >> ${json-file}
-	@echo "    \"value-base64-encoded\": \"$$(cat ${encrypted-val-file}|base64)\"" >> ${json-file}
+	@echo "    \"value-base64-encoded\": \"$$(cat ${encrypted-val-file}| base64 | tr -d '[:space:]')\"" >> ${json-file}
 	@echo "}" >> ${json-file}
 	@$(MAKE) --file $(THIS_FILE) clean
 	# Generated File:
