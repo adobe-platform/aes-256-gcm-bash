@@ -1,6 +1,7 @@
 default: key
 
 THIS_FILE := $(lastword $(MAKEFILE_LIST))
+THIS_FILE_DIR := $(dir ${THIS_FILE})
 workspace=$(shell echo "$$(pwd)/.aes_256_gcm")
 OPENSSL_KEY_GEN_CMD=openssl enc -aes-256-cbc -k secret -P -md sha1 | grep key= | cut -d= -f2
 
@@ -28,14 +29,13 @@ iv-path=${workspace}/iv
 iv:
 	# Generating Initialization Vector
 	@echo ${iv-path}
-	@date +%s | md5 > ${iv-path} || \
-	date +%s | md5sum | awk '{print $$1}' > ${iv-path}
+	@date +%s | md5 > ${iv-path}
 
 # meat of automations - crypto-black magicks
 .PHONY: encrypt decrypt clean clean-all install
 
 install:
-	@brew install libressl || apk add libressl
+	@brew install libressl || apk add libressl outils-md5
 	@mkdir -p $$(echo $$PATH | cut -d: -f1)
 	ln -sf $$(pwd)/bin/aes-256-gcm-bash $$(echo $$PATH | cut -d: -f1)/aes-256-gcm-bash
 
@@ -113,4 +113,4 @@ decrypt-kms: decrypt
 encrypt-kms: kms-get-secret
 encrypt-kms: encrypt
 
-include build/make/*.mk
+include ${THIS_FILE_DIR}/build/make/*.mk

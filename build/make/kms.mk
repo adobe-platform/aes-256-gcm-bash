@@ -8,9 +8,13 @@ kms-key:
 
 	@echo "Retreived Ciphertext from KMS: \n\t${KMS_CIPHERTEXT}\n"
 
+AWS_KMS_CMD=aws kms decrypt --ciphertext-blob fileb:///dev/stdin --region ${AWS_REGION} --output text --query Plaintext | xxd -pu
 kms-get-secret: guard-AWS_REGION
 kms-get-secret: guard-KMS_CIPHERTEXT
 kms-get-secret:
-	@$(eval AES_256_GCM_SECRET:=$(shell echo "${KMS_CIPHERTEXT}" | base64 --decode | aws kms decrypt --ciphertext-blob fileb:///dev/stdin --region ${AWS_REGION} --output text --query Plaintext | xxd -pu))
+	# attempt base64 decode via --decode flag
+	-@$(eval AES_256_GCM_SECRET:=$(shell echo "${KMS_CIPHERTEXT}" | base64 --decode | ${AWS_KMS_CMD}))
+	# attempt base64 decode via -d flag
+	-@$(eval AES_256_GCM_SECRET:=$(shell echo "${KMS_CIPHERTEXT}" | base64 -d | ${AWS_KMS_CMD}))
 
-	@echo "Decrypted KMS_CIPHERTEXT.'"
+	@echo "Decrypted KMS_CIPHERTEXT."
