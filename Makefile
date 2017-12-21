@@ -35,7 +35,7 @@ iv:
 .PHONY: encrypt decrypt clean clean-all install
 
 install:
-	@brew install libressl || apk add libressl outils-md5
+	@brew install libressl || apk add libressl outils-md5 vim # for some reason VIM has xxd :|
 	@mkdir -p $$(echo $$PATH | cut -d: -f1)
 	ln -sf $$(pwd)/bin/aes-256-gcm-bash $$(echo $$PATH | cut -d: -f1)/aes-256-gcm-bash
 
