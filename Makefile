@@ -32,10 +32,20 @@ iv:
 	@date +%s | md5 > ${iv-path}
 
 # meat of automations - crypto-black magicks
-.PHONY: encrypt decrypt clean clean-all install
+.PHONY: encrypt decrypt clean clean-all install install-apt
 
 install:
 	@brew install libressl || apk add libressl outils-md5 vim # for some reason VIM has xxd :|
+	@mkdir -p $$(echo $$PATH | cut -d: -f1)
+	ln -sf $$(pwd)/bin/aes-256-gcm-bash $$(echo $$PATH | cut -d: -f1)/aes-256-gcm-bash
+
+# USE AT YOUR OWN RISK
+install-apt:
+	@apt-get install -y autoconf autogen libtool
+	(git clone https://github.com/libressl-portable/portable.git /opt/libressl && cd /opt/libressl && git checkout v2.6.4 && \
+	  sh autogen.sh && ./configure --prefix="/opt/libressl" && make && make install-exec && \
+	  ln -sf $$(pwd)/bin/openssl $$(which openssl))
+	which openssl && openssl version
 	@mkdir -p $$(echo $$PATH | cut -d: -f1)
 	ln -sf $$(pwd)/bin/aes-256-gcm-bash $$(echo $$PATH | cut -d: -f1)/aes-256-gcm-bash
 
