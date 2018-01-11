@@ -78,6 +78,8 @@ encrypt: key iv
 	# Checking for input file (secret=<YOUR_FILE>)
 	@if [ -z "${secret}" ] || [ ! -f "${secret}" ]; then echo "INVALID FILE (DNE?): ${secret}" && exit 1; fi
 
+	@mkdir -p $(shell dirname ${encrypted-val-file})
+
 	# Generating secrets file
 	@openssl enc -aes-256-gcm -p -salt \
 	  -iv "$$(cat ${iv-path})" \
