@@ -106,8 +106,7 @@ decrypt: key
 	# Checking for input file (encrypted=<YOUR_FILE> - generated via "make encrypt")
 	@if [ -z "${encrypted}" ] || [ ! -f "${encrypted}" ]; then echo "INVALID FILE (DNE?): ${encrypted}" && exit 1; fi
 	# Reading encrypted metadata...
-	@jq '.["value-base64-encoded"]' -r ${encrypted} | base64 --decode > ${enc-dat-file} || \
-	jq '.["value-base64-encoded"]' -r ${encrypted} | base64 -d > ${enc-dat-file}
+	@jq '.["value-base64-encoded"]' -r ${encrypted} | /bin/bash build/scripts/base64.sh -d > ${enc-dat-file}
 
 	# Decrypting...
 	@[ -z ${AES_256_GCM_SECRET} ] && echo "No such env-var: AES_256_GCM_SECRET" && \
