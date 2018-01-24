@@ -1,6 +1,9 @@
 guard-%: 
 	@if [ -z "${${*}}" ]; then echo "REQUIRED env-var $* not set" && exit 1; fi
 
+THIS_FILE_DIR := $(dir ${THIS_FILE})
+
+
 kms-key: guard-AWS_REGION
 kms-key: guard-KMS_KEY_ARN 
 kms-key:
@@ -12,6 +15,6 @@ AWS_KMS_CMD=aws kms decrypt --ciphertext-blob fileb:///dev/stdin --region ${AWS_
 kms-get-secret: guard-AWS_REGION
 kms-get-secret: guard-KMS_CIPHERTEXT
 kms-get-secret:
-	-@$(eval AES_256_GCM_SECRET:=$(shell echo "${KMS_CIPHERTEXT}" | /bin/bash build/scripts/base64.sh -d | ${AWS_KMS_CMD}))
+	-@$(eval AES_256_GCM_SECRET:=$(shell echo "${KMS_CIPHERTEXT}" | /bin/bash ${THIS_FILE_DIR}/build/scripts/base64.sh -d | ${AWS_KMS_CMD}))
 
 	@echo "Decrypted KMS_CIPHERTEXT."
