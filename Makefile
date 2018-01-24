@@ -34,10 +34,15 @@ iv:
 # meat of automations - crypto-black magicks
 .PHONY: encrypt decrypt clean clean-all install install-apt
 
-install:
+install-packages:
 	@brew install libressl || apk add libressl outils-md5 vim # for some reason VIM has xxd :|
+
+install-path:
 	@mkdir -p $$(echo $$PATH | cut -d: -f1)
-	ln -sf $$(pwd)/bin/aes-256-gcm-bash $$(echo $$PATH | cut -d: -f1)/aes-256-gcm-bash
+	ln -sf $$(pwd)/bin/aes-256-gcm-bash $$(echo $$PATH | cut -d: -f1)/aes-256-gcm-bash	
+
+install: install-packages
+install: install-path
 
 # USE AT YOUR OWN RISK
 install-apt:
