@@ -32,7 +32,7 @@ iv:
 	@date +%s | md5 > ${iv-path}
 
 # meat of automations - crypto-black magicks
-.PHONY: encrypt decrypt clean clean-all install install-apt
+.PHONY: encrypt decrypt clean clean-all install install-apt encrypt-kms decrypt-kms
 
 install-packages:
 	@brew install libressl || apk add libressl outils-md5 vim # for some reason VIM has xxd :|
