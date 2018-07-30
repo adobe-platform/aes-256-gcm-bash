@@ -34,8 +34,14 @@ iv:
 # meat of automations - crypto-black magicks
 .PHONY: encrypt decrypt clean clean-all install install-apt encrypt-kms decrypt-kms
 
+# for some reason VIM has xxd :|
+# also, make sure to lock to libressl 2.5.5-r2 or else everything breaks
+# have to update twice for some reason, not sure
 install-packages:
-	@brew install libressl || apk add libressl outils-md5 vim # for some reason VIM has xxd :|
+	@brew install libressl || \
+      apk update && apk update && \
+      apk add libressl=2.5.5-r2 && \
+      apk add outils-md5 vim
 
 install-path:
 	@mkdir -p $$(echo $$PATH | cut -d: -f1)
