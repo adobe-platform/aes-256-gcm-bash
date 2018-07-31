@@ -53,12 +53,19 @@ install: install-path
 # USE AT YOUR OWN RISK
 install-apt:
 	@apt-get install -y autoconf autogen libtool
-	(git clone https://github.com/libressl-portable/portable.git /opt/libressl && cd /opt/libressl && git checkout v2.6.4 && \
+	(git clone https://github.com/libressl-portable/portable.git /opt/libressl && cd /opt/libressl && git checkout v2.5.5 && \
 	  sh autogen.sh && ./configure --prefix="/opt/libressl" && make && make install-exec && \
 	  ln -sf $$(pwd)/bin/openssl $$(which openssl))
 	which openssl && openssl version
 	@mkdir -p $$(echo $$PATH | cut -d: -f1)
 	ln -sf $$(pwd)/bin/aes-256-gcm-bash $$(echo $$PATH | cut -d: -f1)/aes-256-gcm-bash
+install-yum:
+	@yum install -y autoconf autogen libtool
+	(git clone https://github.com/libressl-portable/portable.git /opt/libressl && cd /opt/libressl && git checkout v2.5.5 && \
+	  sh autogen.sh && ./configure --prefix="/opt/libressl" && make && make install-exec && \
+	  ln -sf $$(pwd)/bin/openssl $$(which openssl))
+	which openssl && openssl version
+	ln -sf $$(pwd)/bin/aes-256-gcm-bash /sbin/aes-256-gcm-bash
 
 # workspace specific meta files used for intermediate operations
 #  - used for encrypt
